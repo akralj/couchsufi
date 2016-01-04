@@ -20,7 +20,7 @@
   "dependencies": {
     "ampersand-app": "^1.0.4",
     "underscore": "^1.8.3",
-    "xhr": "^2.0.1"
+    "xhr": "akralj/xhr"
   },
   "devDependencies": {
     "prova": "akralj/prova",
