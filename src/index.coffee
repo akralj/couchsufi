@@ -3,6 +3,7 @@ queue = require('./lib/queue')
 _ = require('underscore')
 app = require('ampersand-app')
 param = require('jquery-param')
+equal = require('deep-equal') # deep object equal
 
 module.exports = (spec) ->
   unless spec.dbName and spec.couchdbServerUrl
@@ -105,12 +106,20 @@ module.exports = (spec) ->
     docs = if _.isArray(docs) then docs else [docs]
     # get revs of already available docs
     ids = _.compact(_.pluck(docs, "_id"))
-    get ids, "revs", (err, res) ->
+    get ids, (err, docsInCouchdb) ->
       uploadData =
-        if res?.length > 0
-          docs.map (doc) ->
-            doc._rev = _rev if _rev = _.findWhere(res, {_id: doc._id})?._rev
-            doc
+        if docsInCouchdb?.length > 0
+          _.compact docs.map (newDoc) ->
+            docInCouchdb = _.findWhere(docsInCouchdb, _id: newDoc._id)
+            rev = docInCouchdb._rev
+            delete docInCouchdb._rev
+            if equal(newDoc, docInCouchdb)
+              console.log "same doc", newDoc.beginn_zeit1, newDoc._id
+              undefined
+            else
+              console.log newDoc._id, "is different", rev
+              newDoc._rev = rev
+              newDoc
         else docs
 
       opts =
@@ -200,18 +209,19 @@ module.exports = (spec) ->
       else cb {status: 'fail'}
 
 
-  createView = (keys, cb) ->
-    keys.forEach (item) ->
-      viewObj = "language": "coffeescript", views: {}
-      func = map: "(doc) -> emit doc.#{item} if doc.#{item}", reduce: "_count"
-      viewObj.views[item] = func
-      url = "#{couchdbUrl}/_design/#{item}"
-      request {
-        url: url
-        headers: 'Content-Type': 'application/json'
-        body: JSON.stringify(viewObj)
-        method: 'PUT'
-      }, (err, res) -> #console.log err, res
+  createView = (opts, cb) ->
+    if opts?.keys
+      opts.keys.forEach (item) ->
+        viewObj = "language": "coffeescript", views: {}
+        func = map: "(doc) -> emit doc.#{item} if doc.#{item}", reduce: "_count"
+        viewObj.views[item] = func
+        url = "#{couchdbUrl}/_design/#{item}"
+        request {
+          url: url
+          headers: 'Content-Type': 'application/json'
+          body: JSON.stringify(viewObj)
+          method: 'PUT'
+        }, (err, res) -> #console.log err, res
 
 
   # return all nice cool public methods

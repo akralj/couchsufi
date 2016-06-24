@@ -1,6 +1,6 @@
 {
   "name": "couchsufi",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "REST, accounts & more for couchdb",
   "main": "./dist/index.js",
   "scripts": {
@@ -12,18 +12,21 @@
     "url": "https://github.com/akralj/couchsufi"
   },
   "author": "akralj",
-  "license": "GPLv3",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/akralj/couchsufi/issues"
   },
   "homepage": "https://github.com/akralj/couchsufi",
   "dependencies": {
-    "ampersand-app": "^1.0.4",
-    "underscore": "^1.8.3",
+    "ampersand-app": "latest",
+    "deep-equal": "latest",
+    "jquery-param": "^0.2.0",
+    "underscore": "latest",
     "xhr": "akralj/xhr"
   },
   "devDependencies": {
-    "prova": "akralj/prova",
-    "jitter": ""
+    "coffeeify": "^2.0.1",
+    "jitter": "",
+    "prova": "azer/prova"
   }
 }

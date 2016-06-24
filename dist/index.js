@@ -1,4 +1,4 @@
-var _, app, param, queue, request,
+var _, app, equal, param, queue, request,
   slice = [].slice,
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -11,6 +11,8 @@ _ = require('underscore');
 app = require('ampersand-app');
 
 param = require('jquery-param');
+
+equal = require('deep-equal');
 
 module.exports = function(spec) {
   var couchdbServerUrl, couchdbUrl, createView, find, get, head, isUserLoggedIn, login, logout, queryByUrl, remove, saveAttachment, upsert;
@@ -163,17 +165,24 @@ module.exports = function(spec) {
     var ids;
     docs = _.isArray(docs) ? docs : [docs];
     ids = _.compact(_.pluck(docs, "_id"));
-    return get(ids, "revs", function(err, res) {
+    return get(ids, function(err, docsInCouchdb) {
       var opts, uploadData;
-      uploadData = (res != null ? res.length : void 0) > 0 ? docs.map(function(doc) {
-        var _rev, ref;
-        if (_rev = (ref = _.findWhere(res, {
-          _id: doc._id
-        })) != null ? ref._rev : void 0) {
-          doc._rev = _rev;
+      uploadData = (docsInCouchdb != null ? docsInCouchdb.length : void 0) > 0 ? _.compact(docs.map(function(newDoc) {
+        var docInCouchdb, rev;
+        docInCouchdb = _.findWhere(docsInCouchdb, {
+          _id: newDoc._id
+        });
+        rev = docInCouchdb._rev;
+        delete docInCouchdb._rev;
+        if (equal(newDoc, docInCouchdb)) {
+          console.log("same doc", newDoc.beginn_zeit1, newDoc._id);
+          return void 0;
+        } else {
+          console.log(newDoc._id, "is different", rev);
+          newDoc._rev = rev;
+          return newDoc;
         }
-        return doc;
-      }) : docs;
+      })) : docs;
       opts = {
         url: couchdbUrl + "/_bulk_docs",
         headers: {
@@ -316,28 +325,30 @@ module.exports = function(spec) {
       }
     });
   };
-  createView = function(keys, cb) {
-    return keys.forEach(function(item) {
-      var func, url, viewObj;
-      viewObj = {
-        "language": "coffeescript",
-        views: {}
-      };
-      func = {
-        map: "(doc) -> emit doc." + item + " if doc." + item,
-        reduce: "_count"
-      };
-      viewObj.views[item] = func;
-      url = couchdbUrl + "/_design/" + item;
-      return request({
-        url: url,
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(viewObj),
-        method: 'PUT'
-      }, function(err, res) {});
-    });
+  createView = function(opts, cb) {
+    if (opts != null ? opts.keys : void 0) {
+      return opts.keys.forEach(function(item) {
+        var func, url, viewObj;
+        viewObj = {
+          "language": "coffeescript",
+          views: {}
+        };
+        func = {
+          map: "(doc) -> emit doc." + item + " if doc." + item,
+          reduce: "_count"
+        };
+        viewObj.views[item] = func;
+        url = couchdbUrl + "/_design/" + item;
+        return request({
+          url: url,
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(viewObj),
+          method: 'PUT'
+        }, function(err, res) {});
+      });
+    }
   };
   return Object.freeze({
     get: get,

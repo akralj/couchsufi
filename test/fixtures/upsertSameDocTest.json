@@ -1,0 +1,46 @@
+{
+   "_id": "upsertSameDocTest",
+   "actor": [
+       "Tommy Caldwell",
+       "Johanna Ernst",
+       "Alex Honnold",
+       "Kevin Jorgeson",
+       "Adam Ondra",
+       "Paul Robinson",
+       "Matt Segal",
+       "Chris Sharma",
+       "Patxi Usobiaga",
+       "Daniel Woods"
+   ],
+   "aka": [
+       "progression",
+       "1530970",
+       "tt1530970"
+   ],
+   "country": [
+       "Belgium",
+       "Slovenia",
+       "South Africa",
+       "Spain",
+       "UK",
+       "USA"
+   ],
+   "datePublished": 2009,
+   "description": "Behind every breakthrough in the progression of climbing, there's a true story of doubt and determination, perseverance in the face of failure. From boulders, to big walls, to competition podiums, the climbers at the top of the game share a commitment to do whatever it takes to achieve their vision.",
+   "director": [
+       "Bret Lowell",
+       "Josh Lowell"
+   ],
+   "duration": 82,
+   "genre": [
+       "Documentary",
+       "Adventure",
+       "Sport"
+   ],
+   "ids_tmdb": "31222",
+   "name": "Progression",
+   "ratingCount": 56,
+   "ratingValue": 8.3,
+   "ts": "2014-01-15T17:50:27.360Z",
+   "type": "video"
+}
