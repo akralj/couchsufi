@@ -2,14 +2,20 @@ request = require('xhr')
 queue = require('./lib/queue')
 _ = require('underscore')
 app = require('ampersand-app')
+param = require('jquery-param')
 
 module.exports = (spec) ->
-  {couchdbUrl, couchServerUrl} = spec
+  unless spec.dbName and spec.couchdbServerUrl
+    throw new Error("""Please supply {couchdbServerUrl:"http://localhost:5984", dbName: "databaseName"} """)
+    return
+  couchdbServerUrl = spec.couchdbServerUrl
+  couchdbUrl       = "#{couchdbServerUrl}/#{spec.dbName}"
 
   # asks for array of ids, unlimited in length
+  # opts: "revs" -> return only _id and _rev
   # callbacks array of docs
-  get = (args, cb) ->
-    ids = args.ids
+  get = (ids, opts..., cb) ->
+    ids = if _.isArray(ids) then ids else [ids]
 
     getSearchUrl = (ids) -> "#{couchdbUrl}/_all_docs?keys=#{JSON.stringify ids}&include_docs=true&reduce=false"
 
@@ -19,8 +25,18 @@ module.exports = (spec) ->
         headers: 'Content-Type': 'application/json'
       }, (err, resp, body) ->
         if body
-          docs = JSON.parse(body).rows.map (item) -> item.doc
-          next(null, docs)
+          try docs = JSON.parse(body)
+          catch err
+          if docs.rows.length > 0 and "revs" in opts
+            retDocs = docs.rows.map (item) ->
+              if item?.doc
+                {_id: item.doc._id, _rev: item.doc._rev}
+              else undefined
+            next(null, retDocs)
+          else if docs.rows.length > 0
+            retDocs = docs.rows.map (item) -> item.doc
+            next(null, retDocs)
+          else next err
         app.trigger 'xhr:removeFinished'
       app.trigger 'xhr:add', xhr
 
@@ -35,19 +51,30 @@ module.exports = (spec) ->
       queries.forEach (url) ->  q.defer(getDocs, url)
       q.awaitAll (err, res) ->
         if res
-          cb null, _.compact _.flatten(res)
+          console.timeEnd("startget")
+          cb null, _.compact(_.flatten(res))
     else cb {error: 'need array of ids and callback'}
 
   queryByUrl = (url, next) ->
-    console.log "#{couchdbUrl}/#{url}"
+    #console.log "#{couchdbUrl}/#{url}"
     xhr = request "#{couchdbUrl}/#{url}", (err, res, body) ->
       if body
         json = JSON.parse(body)
-        next(null, json)
+        # parse and return everthing apart of _design docs
+        docs = (json.rows.map (item) -> item.doc).filter (item) -> not item._id.match("^_design")
+        next(null, docs)
       else next({error: "nothing found"})
       # clean up finished requests
       app.trigger 'xhr:removeFinished'
     app.trigger 'xhr:add', xhr
+
+  find = (query, cb) ->
+    #console.log "query", query, param(query)
+    if _.isEmpty(query)
+      url = "_all_docs?reduce=false&include_docs=true"
+      queryByUrl url, (err, res) -> cb err, res
+    else cb "query not implemented"
+
 
   # Rewrite this with xhr lib, and make get in view more general for typeahead and other queries
   # call query maybe and model after dexie.js or https://github.com/cloudant/mango
@@ -73,43 +100,37 @@ module.exports = (spec) ->
           console.log err
           cb err
 
-  upsert = (id, body, cb) ->
+  upsert = (docs, cb) ->
     # we take care of rev update, so any upsert will ALWAYS the doc even if there is the wrong rev
-    delete body._rev
-    @head id, (err, rev) ->
-      if rev
-        body._rev = rev
+    docs = if _.isArray(docs) then docs else [docs]
+    # get revs of already available docs
+    ids = _.compact(_.pluck(docs, "_id"))
+    get ids, "revs", (err, res) ->
+      uploadData =
+        if res?.length > 0
+          docs.map (doc) ->
+            doc._rev = _rev if _rev = _.findWhere(res, {_id: doc._id})?._rev
+            doc
+        else docs
 
-      request {
-        url: "#{couchdbUrl}/#{id}"
+      opts =
+        url: "#{couchdbUrl}/_bulk_docs"
         headers: 'Content-Type': 'application/json'
-        body: JSON.stringify(body)
-        method: 'PUT'
-      }, (err, res) ->
+        body: JSON.stringify({docs: uploadData})
+        method: 'POST'
+      console.time "upsert"
+      request opts, (err, res) ->
         if err
           cb err
         else
           try
             val = JSON.parse(res.body)
           if val
+            console.timeEnd "upsert"
             cb null, val
           else cb {error: 'status code'}
 
-  create = (body, cb) ->
-    request {
-      url: couchdbUrl
-      headers: 'Content-Type': 'application/json'
-      body: JSON.stringify(body)
-      method: 'POST'
-    }, (err, res) ->
-      if err
-        cb err
-      else
-        try
-          val = JSON.parse(res.body)
-        if val
-          cb null, val
-        else cb {error: 'status code'}
+
 
   # gimme an id and i give you the _rev back
   head = (id, cb) ->
@@ -118,21 +139,34 @@ module.exports = (spec) ->
       headers: 'Content-Type': 'application/json'
       method: 'HEAD'
     }, (err, res) ->
-      console.log err, res
       if res.statusCode is 200
         cb null, JSON.parse(res.headers.etag)
       else
         cb {error: res.statusCode}
 
+  # TODO: decide if it makes sense to keep the whole doc by GETing doc and PUTing _deleted into the doc
+  remove = (id, cb) ->
+    head id, (err, rev) ->
+      if rev
+        request {
+          url: "#{couchdbUrl}/#{id}?rev=#{rev}"
+          headers: 'Content-Type': 'application/json'
+          method: 'DELETE'
+        }, (err, res) ->
+          if res.statusCode is 200
+            cb null, JSON.parse(res.headers.etag)
+          else
+            cb {error: res.statusCode}
+      else cb err
 
   # account methods
-  isUserLoggedIn = (args, mainCallback) ->
+  isUserLoggedIn = (cb) ->
     opts = { url: "#{couchdbUrl}/_security", headers: {"content-type": "application/json"}, withCredentials: true}
     request opts, (err, res, body) ->
       if res.statusCode isnt 200
-        mainCallback(JSON.parse body)
+        cb(JSON.parse body)
       else
-        mainCallback(null, JSON.parse body)
+        cb(null, JSON.parse body)
 
 
   login = (args, cb) ->
@@ -140,7 +174,7 @@ module.exports = (spec) ->
       cb error: "Please supply username, password and couchdbUrl"
     else
       opts =
-        url: "#{couchServerUrl}/_session"
+        url: "#{couchdbServerUrl}/_session"
         data: JSON.stringify {name: args.username, password: args.password}
         method: 'POST'
         withCredentials: true
@@ -165,17 +199,34 @@ module.exports = (spec) ->
         cb null, {status: 'success'}
       else cb {status: 'fail'}
 
+
+  createView = (keys, cb) ->
+    keys.forEach (item) ->
+      viewObj = "language": "coffeescript", views: {}
+      func = map: "(doc) -> emit doc.#{item} if doc.#{item}", reduce: "_count"
+      viewObj.views[item] = func
+      url = "#{couchdbUrl}/_design/#{item}"
+      request {
+        url: url
+        headers: 'Content-Type': 'application/json'
+        body: JSON.stringify(viewObj)
+        method: 'PUT'
+      }, (err, res) -> #console.log err, res
+
+
   # return all nice cool public methods
   return Object.freeze({
-    head: head
     get: get
+    upsert: upsert
+    # remove: remove
+    find: find
     queryByUrl: queryByUrl
     saveAttachment: saveAttachment
     login: login
-    isUserLoggedIn: isUserLoggedIn
     logout: logout
-    create: create
-    upsert: upsert
-    #remove: "remove"
+    isUserLoggedIn: isUserLoggedIn
+    createView: createView
+    head: head
+    remove: remove
     #removeAttachment: "remove"
   })
