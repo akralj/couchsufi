@@ -1,4 +1,4 @@
-var _, app, equal, param, queue, request,
+var _, app, equal, fs, param, queue, request,
   slice = [].slice,
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
@@ -13,6 +13,8 @@ app = require('ampersand-app');
 param = require('jquery-param');
 
 equal = require('deep-equal');
+
+fs = require("fs");
 
 module.exports = function(spec) {
   var couchdbServerUrl, couchdbUrl, createView, find, get, head, isUserLoggedIn, login, logout, queryByUrl, remove, saveAttachment, upsert;
@@ -172,14 +174,19 @@ module.exports = function(spec) {
         docInCouchdb = _.findWhere(docsInCouchdb, {
           _id: newDoc._id
         });
-        rev = docInCouchdb._rev;
-        delete docInCouchdb._rev;
-        if (equal(newDoc, docInCouchdb)) {
-          console.log("same doc", newDoc.beginn_zeit1, newDoc._id);
-          return void 0;
+        if (docInCouchdb && (rev = docInCouchdb._rev)) {
+          delete docInCouchdb._rev;
+          console.log("keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length);
+          if (equal(newDoc, docInCouchdb)) {
+            console.log("same doc", newDoc._id);
+            return void 0;
+          } else {
+            console.log(newDoc._id, "is different", rev);
+            newDoc._rev = rev;
+            return newDoc;
+          }
         } else {
-          console.log(newDoc._id, "is different", rev);
-          newDoc._rev = rev;
+          console.log("insert doc");
           return newDoc;
         }
       })) : docs;
@@ -326,9 +333,10 @@ module.exports = function(spec) {
     });
   };
   createView = function(opts, cb) {
+    var designViews, viewObj;
     if (opts != null ? opts.keys : void 0) {
-      return opts.keys.forEach(function(item) {
-        var func, url, viewObj;
+      designViews = opts.keys.map(function(item) {
+        var func, viewObj;
         viewObj = {
           "language": "coffeescript",
           views: {}
@@ -338,15 +346,25 @@ module.exports = function(spec) {
           reduce: "_count"
         };
         viewObj.views[item] = func;
-        url = couchdbUrl + "/_design/" + item;
-        return request({
-          url: url,
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(viewObj),
-          method: 'PUT'
-        }, function(err, res) {});
+        viewObj._id = "_design/" + item;
+        return viewObj;
+      });
+      return upsert(designViews, function(err, res) {
+        return console.log(err, res);
+      });
+    } else if ((opts != null ? opts.map : void 0) && (opts != null ? opts.reduce : void 0)) {
+      viewObj = {
+        language: "coffeescript",
+        views: {
+          erster: {
+            map: opts.map,
+            reduce: opts.reduce,
+            _id: "_design/" + zweoter
+          }
+        }
+      };
+      return upsert(viewObj, function(err, res) {
+        return console.log(err, res);
       });
     }
   };

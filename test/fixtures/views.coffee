@@ -1,8 +1,10 @@
 doc = subkey = key = undefined
 
 
-module.exports =
-  "stats.all":
+module.exports =[
+  {
+    key: "stats"
+    _id: "all"
     map: """Object.keys(doc).forEach (key) ->
       if key is "termine" and doc[key]?.length > 0
         emit "termine-#{doc?[key].length}x"
@@ -16,3 +18,5 @@ module.exports =
       else if doc[key]
         emit key, doc[key]"""
     reduce: "_count"
+  }
+]

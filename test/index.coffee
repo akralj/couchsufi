@@ -27,9 +27,9 @@ prova 'upsert', (test) ->
 ###
 
 prova 'design docs', (test) ->
-  test.plan 1
+  test.plan 2
   console.log views = require("./fixtures/views")
-  couchdb.createView {keys: ["name", "country"]}, (err, res) ->
+  couchdb.createView {keys: ["name"]}, (err, res) ->
     console.log err, res
   test.equals 1,1
 ###

@@ -4,6 +4,8 @@ _ = require('underscore')
 app = require('ampersand-app')
 param = require('jquery-param')
 equal = require('deep-equal') # deep object equal
+# debugging
+fs = require("fs")
 
 module.exports = (spec) ->
   unless spec.dbName and spec.couchdbServerUrl
@@ -111,14 +113,20 @@ module.exports = (spec) ->
         if docsInCouchdb?.length > 0
           _.compact docs.map (newDoc) ->
             docInCouchdb = _.findWhere(docsInCouchdb, _id: newDoc._id)
-            rev = docInCouchdb._rev
-            delete docInCouchdb._rev
-            if equal(newDoc, docInCouchdb)
-              console.log "same doc", newDoc.beginn_zeit1, newDoc._id
-              undefined
+            # 1. update case
+            if docInCouchdb and rev = docInCouchdb._rev
+              delete docInCouchdb._rev
+              #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
+              console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length#, "newDoc:", Object.keys(newDoc).sort()
+              if equal(newDoc, docInCouchdb)
+                console.log "same doc", newDoc._id
+                undefined
+              else
+                console.log newDoc._id, "is different", rev
+                newDoc._rev = rev
+                newDoc
             else
-              console.log newDoc._id, "is different", rev
-              newDoc._rev = rev
+              console.log "insert doc"
               newDoc
         else docs
 
@@ -208,20 +216,26 @@ module.exports = (spec) ->
         cb null, {status: 'success'}
       else cb {status: 'fail'}
 
-
+  # gimme keys, i give you a standdard view
   createView = (opts, cb) ->
     if opts?.keys
-      opts.keys.forEach (item) ->
+      designViews = opts.keys.map (item) ->
         viewObj = "language": "coffeescript", views: {}
         func = map: "(doc) -> emit doc.#{item} if doc.#{item}", reduce: "_count"
         viewObj.views[item] = func
-        url = "#{couchdbUrl}/_design/#{item}"
-        request {
-          url: url
-          headers: 'Content-Type': 'application/json'
-          body: JSON.stringify(viewObj)
-          method: 'PUT'
-        }, (err, res) -> #console.log err, res
+        viewObj._id = "_design/#{item}"
+        viewObj
+      upsert designViews, (err, res) -> console.log err, res
+    else if opts?.map and opts?.reduce
+      viewObj =
+        language: "coffeescript"
+        views:
+          erster:
+            map: opts.map
+            reduce: opts.reduce
+            _id: "_design/#{zweoter}"
+      upsert viewObj, (err, res) -> console.log err, res
+
 
 
   # return all nice cool public methods
