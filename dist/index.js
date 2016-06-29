@@ -71,7 +71,6 @@ module.exports = function(spec) {
       });
       return app.trigger('xhr:add', xhr);
     };
-    console.time("startget");
     if (_.isArray(ids)) {
       chunkSize = 100;
       queries = _.chain(ids).groupBy(function(element, index) {
@@ -91,7 +90,6 @@ module.exports = function(spec) {
       });
       return q.awaitAll(function(err, res) {
         if (res) {
-          console.timeEnd("startget");
           return cb(null, _.compact(_.flatten(res)));
         }
       });
@@ -170,15 +168,17 @@ module.exports = function(spec) {
     return get(ids, function(err, docsInCouchdb) {
       var opts, uploadData;
       uploadData = (docsInCouchdb != null ? docsInCouchdb.length : void 0) > 0 ? _.compact(docs.map(function(newDoc) {
-        var docInCouchdb, rev;
+        var differentKeys, docInCouchdb, rev;
         docInCouchdb = _.findWhere(docsInCouchdb, {
           _id: newDoc._id
         });
         if (docInCouchdb && (rev = docInCouchdb._rev)) {
           delete docInCouchdb._rev;
-          console.log("keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length);
+          differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb));
+          if (differentKeys.length > 0) {
+            console.log("keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length, "different keys:", differentKeys);
+          }
           if (equal(newDoc, docInCouchdb)) {
-            console.log("same doc", newDoc._id);
             return void 0;
           } else {
             console.log(newDoc._id, "is different", rev);
@@ -186,7 +186,6 @@ module.exports = function(spec) {
             return newDoc;
           }
         } else {
-          console.log("insert doc");
           return newDoc;
         }
       })) : docs;
@@ -200,7 +199,6 @@ module.exports = function(spec) {
         }),
         method: 'POST'
       };
-      console.time("upsert");
       return request(opts, function(err, res) {
         var val;
         if (err) {
@@ -210,7 +208,6 @@ module.exports = function(spec) {
             val = JSON.parse(res.body);
           } catch (undefined) {}
           if (val) {
-            console.timeEnd("upsert");
             return cb(null, val);
           } else {
             return cb({

@@ -43,7 +43,7 @@ module.exports = (spec) ->
         app.trigger 'xhr:removeFinished'
       app.trigger 'xhr:add', xhr
 
-    console.time("startget")
+    #console.time("startget")
     if _.isArray ids
       chunkSize = 100
       queries = _.chain(ids).groupBy((element, index) ->  Math.floor index / chunkSize).toArray().value().map (ids) -> getSearchUrl(ids)
@@ -54,7 +54,7 @@ module.exports = (spec) ->
       queries.forEach (url) ->  q.defer(getDocs, url)
       q.awaitAll (err, res) ->
         if res
-          console.timeEnd("startget")
+          #console.timeEnd("startget")
           cb null, _.compact(_.flatten(res))
     else cb {error: 'need array of ids and callback'}
 
@@ -117,16 +117,17 @@ module.exports = (spec) ->
             if docInCouchdb and rev = docInCouchdb._rev
               delete docInCouchdb._rev
               #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
-              console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length#, "newDoc:", Object.keys(newDoc).sort()
+              differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb))
+              if differentKeys.length > 0
+                console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
               if equal(newDoc, docInCouchdb)
-                console.log "same doc", newDoc._id
+                #console.log "same doc", newDoc._id
                 undefined
               else
                 console.log newDoc._id, "is different", rev
                 newDoc._rev = rev
                 newDoc
             else
-              console.log "insert doc"
               newDoc
         else docs
 
@@ -135,7 +136,7 @@ module.exports = (spec) ->
         headers: 'Content-Type': 'application/json'
         body: JSON.stringify({docs: uploadData})
         method: 'POST'
-      console.time "upsert"
+      #console.time "upsert"
       request opts, (err, res) ->
         if err
           cb err
@@ -143,7 +144,7 @@ module.exports = (spec) ->
           try
             val = JSON.parse(res.body)
           if val
-            console.timeEnd "upsert"
+            #console.timeEnd "upsert"
             cb null, val
           else cb {error: 'status code'}
 
