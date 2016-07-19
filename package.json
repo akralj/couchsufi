@@ -5,7 +5,9 @@
   "main": "./dist/index.js",
   "scripts": {
     "test": "coffee test/index.coffee -b",
-    "watch": "coffee -o dist/ -cmw src/"
+    "watch": "coffee -o dist/ -cmw src/",
+    "copy": "rsync -avhP  --stats --exclude '.git' /home/a/dev/projects/couchsufi/ /home/a/dev/node_modules/couchsufi/"
+
   },
   "repository": {
     "type": "git",
@@ -26,7 +28,6 @@
     "xhr": "akralj/xhr"
   },
   "devDependencies": {
-    "coffeeify": "^2.0.1",
     "node-uuid": "^1.4.7",
     "prova": "akralj/prova#addCoffeeSupport"
   }

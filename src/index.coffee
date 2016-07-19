@@ -138,7 +138,6 @@ module.exports = (spec) ->
         method: 'POST'
 
       request opts, (err, res) ->
-        console.log err, res
         if err
           cb err
         else

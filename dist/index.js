@@ -202,7 +202,6 @@
         };
         return request(opts, function(err, res) {
           var val;
-          console.log(err, res);
           if (err) {
             return cb(err);
           } else {
