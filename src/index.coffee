@@ -5,7 +5,9 @@ app = require('ampersand-app')
 param = require('jquery-param')
 equal = require('deep-equal') # deep object equal
 # debugging
-fs = require("fs")
+#fs = require("fs")
+#jsondiffpatch = require('jsondiffpatch')
+
 
 module.exports = (spec) ->
   unless spec.dbName and spec.couchdbServerUrl
@@ -116,12 +118,16 @@ module.exports = (spec) ->
             # 1. update case
             if docInCouchdb and rev = docInCouchdb._rev
               delete docInCouchdb._rev
-              #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
               differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb))
               if differentKeys.length > 0
                 console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
+              # DEBUG
+              #console.log "equal:", equal(newDoc, docInCouchdb)
+              #console.log delta = jsondiffpatch.diff(docInCouchdb, newDoc)
+              #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
+
               if equal(newDoc, docInCouchdb)
-                #console.log "same doc", newDoc._id
+                console.log "same doc", newDoc._id
                 undefined
               else
                 #console.log newDoc._id, "is different", rev
@@ -253,3 +259,4 @@ module.exports = (spec) ->
     remove: remove
     #removeAttachment: "remove"
   })
+
