@@ -5,7 +5,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "test": "coffee test/index.coffee -b",
-    "watch": "jitter src dist -bm"
+    "watch": "coffee -o dist/ -cmw src/"
   },
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
   "homepage": "https://github.com/akralj/couchsufi",
   "dependencies": {
     "ampersand-app": "latest",
+    "d3-queue": "^3.0.1",
     "deep-equal": "latest",
     "jquery-param": "^0.2.0",
     "underscore": "latest",
@@ -26,7 +27,7 @@
   },
   "devDependencies": {
     "coffeeify": "^2.0.1",
-    "jitter": "",
+    "node-uuid": "^1.4.7",
     "prova": "akralj/prova#addCoffeeSupport"
   }
 }

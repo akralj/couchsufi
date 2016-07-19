@@ -3,12 +3,13 @@
 prova = require('prova')
 _ = require("underscore")
 couchdbUtils = require('../dist/index')
+guid = require('node-uuid')
 
-couchdbServerUrl = "http://devi:5984"
+couchdbServerUrl = "http://localhost:5984"
 dbName = "couchsufi-test"
 couchdb = couchdbUtils({couchdbServerUrl: couchdbServerUrl, dbName: dbName})
 
-###
+
 prova 'query', (test) ->
   test.plan 2
   couchdb.head '100016', (err, rev) ->
@@ -16,31 +17,30 @@ prova 'query', (test) ->
   couchdb.get ['100016', '100096'], (err, res) ->
     test.equals res.length, 2
 
+
 prova 'upsert', (test) ->
-  test.plan 1
+  test.plan 2
   sameDoc = require("./fixtures/upsertSameDocTest")
   newDoc = (JSON.parse(JSON.stringify(sameDoc)))
-  newDoc._id = "newDoc09"
-  couchdb.upsert newDoc, (err,res) ->
-    console.log err,res
-    test.equals (_.isArray(res) and res?.length is 1), true
-###
 
+  couchdb.upsert sameDoc, (err,res) ->
+    test.equals res[0].ok , true
+
+  setTimeout (=>
+    notSameDoc = (JSON.parse(JSON.stringify(newDoc)))
+    notSameDoc.datePublished = guid.v4()
+    couchdb.upsert notSameDoc, (err, res) ->
+      test.equals res[0].ok , true
+  ), 333
+
+###
 prova 'design docs', (test) ->
-  test.plan 2
+  test.plan 1
   console.log views = require("./fixtures/views")
   couchdb.createView {keys: ["name"]}, (err, res) ->
     console.log err, res
-  test.equals 1,1
-###
-  couchdb.upsert sameDoc, (err,res) ->
-    test.equals (_.isArray(res) and res.length is 0), true
-  notSameDoc = (JSON.parse(JSON.stringify(sameDoc)))
-  notSameDoc.datePublished = 1999
-  couchdb.upsert notSameDoc, (err,res) ->
-    test.equals (_.isArray(res) and res.length is 1), true
 
-
+##
 prova 'login failures', (test) ->
   test.plan 3
   couchdb.isUserLoggedIn {couchdbUrl: couchdbUrl}, (err, res) ->

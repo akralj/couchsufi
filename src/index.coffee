@@ -1,5 +1,5 @@
 request = require('xhr')
-queue = require('./lib/queue')
+d3 = require('d3-queue')
 _ = require('underscore')
 app = require('ampersand-app')
 param = require('jquery-param')
@@ -47,7 +47,7 @@ module.exports = (spec) ->
     if _.isArray ids
       chunkSize = 100
       queries = _.chain(ids).groupBy((element, index) ->  Math.floor index / chunkSize).toArray().value().map (ids) -> getSearchUrl(ids)
-      q = queue(5)
+      q = d3.queue(5)
       app.on 'xhr:abortAll', =>
         console.log "aborting queue"
         q.abort()
@@ -124,7 +124,7 @@ module.exports = (spec) ->
                 #console.log "same doc", newDoc._id
                 undefined
               else
-                console.log newDoc._id, "is different", rev
+                #console.log newDoc._id, "is different", rev
                 newDoc._rev = rev
                 newDoc
             else
@@ -136,18 +136,17 @@ module.exports = (spec) ->
         headers: 'Content-Type': 'application/json'
         body: JSON.stringify({docs: uploadData})
         method: 'POST'
-      #console.time "upsert"
+
       request opts, (err, res) ->
+        console.log err, res
         if err
           cb err
         else
           try
             val = JSON.parse(res.body)
           if val
-            #console.timeEnd "upsert"
             cb null, val
           else cb {error: 'status code'}
-
 
 
   # gimme an id and i give you the _rev back
