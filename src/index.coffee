@@ -127,7 +127,7 @@ module.exports = (spec) ->
               #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
 
               if equal(newDoc, docInCouchdb)
-                console.log "same doc", newDoc._id
+                #console.log "same doc", newDoc._id
                 undefined
               else
                 #console.log newDoc._id, "is different", rev
