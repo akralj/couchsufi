@@ -1,6 +1,6 @@
 {
   "name": "couchsufi",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "REST, accounts & more for couchdb",
   "main": "./dist/index.js",
   "scripts": {
@@ -23,12 +23,13 @@
     "d3-queue": "^3.0.1",
     "deep-equal": "latest",
     "jquery-param": "^0.2.0",
+    "jsondiffpatch": "latest",
     "underscore": "latest",
     "xhr": "akralj/xhr"
   },
   "devDependencies": {
-    "jsondiffpatch": "^0.1.43",
     "node-uuid": "^1.4.7",
-    "prova": "akralj/prova#addCoffeeSupport"
+    "prova": "akralj/prova#addCoffeeSupport",
+    "coffee-script":"latest"
   }
 }

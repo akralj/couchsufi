@@ -1,12 +1,16 @@
+#
+#
+#
+
 request = require('xhr')
 d3 = require('d3-queue')
 _ = require('underscore')
 app = require('ampersand-app')
 param = require('jquery-param')
-equal = require('deep-equal') # deep object equal
+#equal = require('deep-#equal') # not working any long dunno why :(
 # debugging
 #fs = require("fs")
-#jsondiffpatch = require('jsondiffpatch')
+jsondiffpatch = require('jsondiffpatch')
 
 
 module.exports = (spec) ->
@@ -108,7 +112,7 @@ module.exports = (spec) ->
   upsert = (docs, cb) ->
     # we take care of rev update, so any upsert will ALWAYS the doc even if there is the wrong rev
     docs = if _.isArray(docs) then docs else [docs]
-    # get revs of already available docs
+    # get revs of already available docs in couchdb
     ids = _.compact(_.pluck(docs, "_id"))
     get ids, (err, docsInCouchdb) ->
       uploadData =
@@ -121,18 +125,15 @@ module.exports = (spec) ->
               differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb))
               if differentKeys.length > 0
                 console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
-              # DEBUG
-              #console.log "equal:", equal(newDoc, docInCouchdb)
-              #console.log delta = jsondiffpatch.diff(docInCouchdb, newDoc)
-              #fs.writeFileSync "./debug.json", JSON.stringify({newDoc: newDoc, docInCouchdb: docInCouchdb}, "utf8")
-
-              if equal(newDoc, docInCouchdb)
-                #console.log "same doc", newDoc._id
-                undefined
-              else
-                #console.log newDoc._id, "is different", rev
+              # compare to docs, and if they are the same, dont update couchdb
+              if jsondiffpatch.diff(newDoc, docInCouchdb)
+                console.log newDoc._id, "is different", rev
                 newDoc._rev = rev
                 newDoc
+              else
+                console.log "same doc", newDoc._id
+                undefined
+
             else
               newDoc
         else docs
