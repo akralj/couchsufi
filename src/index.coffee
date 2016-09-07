@@ -127,11 +127,11 @@ module.exports = (spec) ->
                 console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
               # compare to docs, and if they are the same, dont update couchdb
               if jsondiffpatch.diff(newDoc, docInCouchdb)
-                console.log newDoc._id, "is different", rev
+                #console.log newDoc._id, "is different", rev
                 newDoc._rev = rev
                 newDoc
               else
-                console.log "same doc", newDoc._id
+                #console.log "same doc", newDoc._id
                 undefined
 
             else

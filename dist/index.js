@@ -179,11 +179,9 @@
               console.log("keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length, "different keys:", differentKeys);
             }
             if (jsondiffpatch.diff(newDoc, docInCouchdb)) {
-              console.log(newDoc._id, "is different", rev);
               newDoc._rev = rev;
               return newDoc;
             } else {
-              console.log("same doc", newDoc._id);
               return void 0;
             }
           } else {
