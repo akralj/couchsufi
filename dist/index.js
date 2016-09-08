@@ -175,9 +175,6 @@
           if (docInCouchdb && (rev = docInCouchdb._rev)) {
             delete docInCouchdb._rev;
             differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb));
-            if (differentKeys.length > 0) {
-              console.log("keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length, "different keys:", differentKeys);
-            }
             if (jsondiffpatch.diff(newDoc, docInCouchdb)) {
               newDoc._rev = rev;
               return newDoc;

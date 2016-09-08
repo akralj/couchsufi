@@ -123,8 +123,8 @@ module.exports = (spec) ->
             if docInCouchdb and rev = docInCouchdb._rev
               delete docInCouchdb._rev
               differentKeys = _.difference(Object.keys(newDoc), Object.keys(docInCouchdb))
-              if differentKeys.length > 0
-                console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
+              # for debugging diff algorithm
+              #if differentKeys.length > 0 then console.log "keys", Object.keys(newDoc).length, Object.keys(docInCouchdb).length , "different keys:", differentKeys
               # compare to docs, and if they are the same, dont update couchdb
               if jsondiffpatch.diff(newDoc, docInCouchdb)
                 #console.log newDoc._id, "is different", rev
