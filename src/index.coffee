@@ -258,6 +258,6 @@ module.exports = (spec) ->
     createView: createView
     head: head
     remove: remove
-    #removeAttachment: "remove"
+    #removeAttachment: "remove" bar
   })
 
