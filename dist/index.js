@@ -25,11 +25,17 @@
     couchdbServerUrl = spec.couchdbServerUrl;
     couchdbUrl = couchdbServerUrl + "/" + spec.dbName;
     get = function() {
-      var cb, chunkSize, getDocs, getSearchUrl, i, ids, opts, q, queries;
+      var cb, chunkSize, designView, getDocs, getSearchUrl, i, ids, opts, q, queries;
       ids = arguments[0], opts = 3 <= arguments.length ? slice.call(arguments, 1, i = arguments.length - 1) : (i = 1, []), cb = arguments[i++];
       ids = _.isArray(ids) ? ids : [ids];
+      designView = "_all_docs";
+      opts.forEach(function(opt) {
+        if (opt.match("_design")) {
+          return designView = opt;
+        }
+      });
       getSearchUrl = function(ids) {
-        return couchdbUrl + "/_all_docs?keys=" + (JSON.stringify(ids)) + "&include_docs=true&reduce=false";
+        return couchdbUrl + "/" + designView + "?keys=" + (JSON.stringify(ids)) + "&include_docs=true&reduce=false";
       };
       getDocs = function(url, next) {
         var xhr;
@@ -46,7 +52,7 @@
             } catch (error) {
               err = error;
             }
-            if (docs.rows.length > 0 && indexOf.call(opts, "revs") >= 0) {
+            if ((docs != null ? docs.rows.length : void 0) > 0 && indexOf.call(opts, "revs") >= 0) {
               retDocs = docs.rows.map(function(item) {
                 if (item != null ? item.doc : void 0) {
                   return {
@@ -58,7 +64,7 @@
                 }
               });
               next(null, retDocs);
-            } else if (docs.rows.length > 0) {
+            } else if ((docs != null ? docs.rows.length : void 0) > 0) {
               retDocs = docs.rows.map(function(item) {
                 return item.doc;
               });
@@ -372,7 +378,8 @@
       isUserLoggedIn: isUserLoggedIn,
       createView: createView,
       head: head,
-      remove: remove
+      remove: remove,
+      version: "v0.2.5"
     });
   };
 
