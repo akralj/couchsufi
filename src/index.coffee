@@ -25,8 +25,9 @@ module.exports = (spec) ->
   # callbacks array of docs
   get = (ids, opts..., cb) ->
     ids = if _.isArray(ids) then ids else [ids]
-
-    getSearchUrl = (ids) -> "#{couchdbUrl}/_all_docs?keys=#{JSON.stringify ids}&include_docs=true&reduce=false"
+    designView = "_all_docs"
+    opts.forEach (opt) -> designView = opt if opt.match("_design")
+    getSearchUrl = (ids) -> "#{couchdbUrl}/#{designView}?keys=#{JSON.stringify ids}&include_docs=true&reduce=false"
 
     getDocs = (url, next) ->
       xhr = request {
@@ -36,13 +37,13 @@ module.exports = (spec) ->
         if body
           try docs = JSON.parse(body)
           catch err
-          if docs.rows.length > 0 and "revs" in opts
+          if docs?.rows.length > 0 and "revs" in opts
             retDocs = docs.rows.map (item) ->
               if item?.doc
                 {_id: item.doc._id, _rev: item.doc._rev}
               else undefined
             next(null, retDocs)
-          else if docs.rows.length > 0
+          else if docs?.rows.length > 0
             retDocs = docs.rows.map (item) -> item.doc
             next(null, retDocs)
           else next err
@@ -258,6 +259,7 @@ module.exports = (spec) ->
     createView: createView
     head: head
     remove: remove
-    #removeAttachment: "remove" bar
+    version: "v0.2.5"
+    #removeAttachment: "remove"
   })
 
