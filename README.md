@@ -1,6 +1,6 @@
 # couchsufi
 
-> I'm using https://github.com/redgeoff/slouch instead now, much more up to date.
+> I'm using https://github.com/redgeoff/slouch instead now - much more up to date.
 
 
 ## Install
